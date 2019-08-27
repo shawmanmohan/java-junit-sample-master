@@ -83,20 +83,14 @@ pipeline {
         stage('Deploy') {
             steps {
                 lock(resource: env.JOB_NAME + "-deploy", inversePrecedence: true) {
-                    script {
-                        try {
-                            sh """
-                                if [ `$(sudo docker ps -aq -f status=exited -f name=${dockerRepo})` ]; then
-                                    sudo docker rm ${dockerRepo}
-                                fi
-                                sudo docker run -it -d -p 8080:8080 --name=${dockerRepo} --restart=unless-stopped ${dockerRegistry}/${dockerRepo}:${gitCommit}
-                            """
-                        } catch (ex) {
-                            echo "Unable to Start Docker Container, Restrating Old Container"
-                            sh """ sudo docker start ${dockerRepo} """
-                            error("Unable to Start Docker Container")
-                        }
-                    }
+                  sh returnStdout: true, script: '''sudo docker ps -aq -f status=exited -f name=${dockerRepo}
+                            if [ $? -eq 1 ]; then
+                                sudo docker rm ${dockerRepo}
+                            elif 
+                               echo "No Container Found, Starting New"
+                               sudo docker run -it -d -p 8080:8080 --name=${dockerRepo} --restart=unless-stopped ${dockerRegistry}/${dockerRepo}:${gitCommit}
+                            fi
+                           '''
                 }
             }
         }
