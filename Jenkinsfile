@@ -6,9 +6,9 @@ pipeline {
 
     environment {
         /* Per app configured variables... */
-        dockerRegistry = 'docker_registry.aws.hotwire.com'
+        dockerRegistry = 'docker.registry.com'
         gitRepo = 'https://github.com/stutirastogi/java-devops.git'
-        dockerRepo = 'java-devops'
+        dockerRepo = 'java-junit-sample'
     }
 
     options {
@@ -81,6 +81,9 @@ pipeline {
         }
 
         stage('Deploy') {
+            agent {
+                label 'dev.naggaro.com'
+            }
             steps {
                 lock(resource: env.JOB_NAME + "-deploy", inversePrecedence: true) {
                   sh returnStdout: true, script: '''sudo docker ps -aq -f status=exited -f name=${dockerRepo}
