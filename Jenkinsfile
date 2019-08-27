@@ -1,7 +1,7 @@
 pipeline {
 
     agent {
-      label 'master'
+      label 'jslave50.aws.hotwire.com'
     }
 
     environment {
