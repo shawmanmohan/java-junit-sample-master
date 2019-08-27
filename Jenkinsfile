@@ -70,22 +70,13 @@ pipeline {
         stage('Clean-Previous-Deploy') {
             steps {
                 lock(resource: env.JOB_NAME + "-deploy", inversePrecedence: true) {
-                    script {
-                        try {
-                      
-                            sh """
-                            sudo docker ps -q -f name=$dockerRepo
+                    sh returnStdout: true, script: '''sudo docker ps -q -f name=${dockerRepo}
                             if [ $? -eq 1 ]; then
-                                sudo docker stop $dockerRepo
+                                sudo docker stop ${dockerRepo}
                             elif 
                                echo "No Container Found"
-                            fi
-                            """
-                        } catch (ex) {
-                            echo "Unable to Stop Old Running Docker Container"
-                        }
-            }
-            }
+                            fi'''
+                    }
             }
         }
 
