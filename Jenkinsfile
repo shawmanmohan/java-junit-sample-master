@@ -74,9 +74,9 @@ pipeline {
                         try {
                       
                             sh """
-                            sudo docker ps -q -f name=${dockerRepo}
+                            sudo docker ps -q -f name=$dockerRepo
                             if [ $? -eq 1 ]; then
-                                sudo docker stop ${dockerRepo} 
+                                sudo docker stop $dockerRepo
                             elif 
                                echo "No Container Found"
                             fi
