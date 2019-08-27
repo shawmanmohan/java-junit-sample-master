@@ -26,7 +26,7 @@ pipeline {
                     script {
                         gitCommit = sh(script: 'git rev-parse --short HEAD', returnStdout: true).trim()
                         try {
-                        sh "sudo docker build --rm -t ${dockerRepo} ."
+                        sh "sudo docker build --rm -t ${dockerRepo}:${gitCommit} ."
                         } catch (ex) {
                            error "Error when building docker image"
                         }
@@ -48,8 +48,23 @@ pipeline {
         stage('Publish') {
             steps {
                 lock(resource: env.JOB_NAME + "-docker-publish", inversePrecedence: true) {
-                    sh "sudo docker tag -f ${dockerRepo} ${dockerRegistry}/${dockerRepo}:${gitCommit}"
-                    sh "sudo docker push ${dockerRegistry}/${dockerRepo}:${gitCommit}"
+                    script {
+                        try {
+                            echo "Pushing docker image to AWS ECR"
+                            dlogin = sh(script: 'aws ecr get-login --no-include-email --region us-west-1', returnStdout: true)
+                            sh "sudo ${dlogin}"
+                            sh "sudo docker tag -f ${dockerRepo}:${gitCommit} ${dockerRegistry}/${dockerRepo}:${gitCommit} || true"
+                            sh "sudo docker push ${dockerRegistry}/${dockerRepo}:${gitCommit}"
+                            echo "Cleaning up docker images after successful push"
+                            sh "sudo docker rmi -f ${dockerRegistry}/${dockerRepo}:${gitCommit}"
+                            sh "sudo docker rmi -f ${dockerRepo}:${gitCommit}"
+                        } catch (ex) {
+                            echo 'Cleaning up docker images after failure'
+                            sh "sudo docker rmi -f ${dockerRegistry}/${appName}:${gitCommit} || true"
+                            sh "sudo docker rmi -f ${dockerRepo}:${gitCommit} || true"
+                            error "Error pushing docker image to repository"
+                        }
+                    }
                 }
             milestone(1)
             }
@@ -76,15 +91,7 @@ pipeline {
         stage('Deploy-Sanity') {
         steps {
                     echo 'Starting Smoke Test'
-                    sh "mvn clean verify"
-                    publishHTML (target: [
-                    allowMissing: false,
-                    alwaysLinkToLastBuild: false,
-                    keepAll: true,
-                    reportDir: 'target/cucumber-reports/.',
-                    reportFiles: 'feature-overview.html',
-                    reportName: "Functional Test Report"
-                ]) 
+                    sh "mvn clean verify" 
             }
         }
     }
@@ -107,5 +114,6 @@ pipeline {
               body: '<p>Check console output at <a href=${BLUE_OCEAN_URL}>${JOB_NAME} [${BUILD_NUMBER}]</a></p>'
           )
       }
+    }
     }
 
