@@ -1,0 +1,4 @@
+-------------------------------------------------------------------------------
+Test set: com.codecentric.sample.store.service.ItemServiceTest
+-------------------------------------------------------------------------------
+Tests run: 4, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.251 sec - in com.codecentric.sample.store.service.ItemServiceTest

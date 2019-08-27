@@ -1,0 +1,4 @@
+-------------------------------------------------------------------------------
+Test set: com.codecentric.sample.store.service.CustomerServiceTest
+-------------------------------------------------------------------------------
+Tests run: 2, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.11 sec - in com.codecentric.sample.store.service.CustomerServiceTest

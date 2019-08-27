@@ -1,0 +1,1 @@
+java -Xss512k -XX:MaxRAM=72m -Xmx500m -jar junitsample*.jar

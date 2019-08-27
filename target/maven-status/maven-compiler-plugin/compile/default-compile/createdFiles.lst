@@ -1,0 +1,11 @@
+com/codecentric/sample/SampleApplication.class
+com/codecentric/sample/store/service/tools/StaticService.class
+com/codecentric/sample/store/service/ItemService.class
+com/codecentric/sample/store/repository/ItemRepository.class
+com/codecentric/sample/store/model/Item.class
+com/codecentric/sample/store/service/CustomerService.class
+com/codecentric/sample/store/model/Customer.class
+com/codecentric/sample/store/service/external/HostService.class
+com/codecentric/sample/store/service/external/AddressService.class
+com/codecentric/sample/store/service/RateService.class
+com/codecentric/sample/store/service/external/ExternalSystemProxy.class
