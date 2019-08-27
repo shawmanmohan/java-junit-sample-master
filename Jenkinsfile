@@ -73,7 +73,7 @@ pipeline {
                     script {
                         try {
                             sh """
-                            if [ ! "$(sudo docker ps -q -f name=${dockerRepo})" ]; then
+                            if [ ! `$(sudo docker ps -q -f name=${dockerRepo})` ]; then
                                 sudo docker stop ${dockerRepo} 
                             fi
                             """
@@ -91,7 +91,7 @@ pipeline {
                     script {
                         try {
                             sh """
-                                if [ "$(sudo docker ps -aq -f status=exited -f name=${dockerRepo})" ]; then
+                                if [ `$(sudo docker ps -aq -f status=exited -f name=${dockerRepo})` ]; then
                                     sudo docker rm ${dockerRepo}
                                 fi
                                 sudo docker run -it -d -p 8080:8080 --name=${dockerRepo} --restart=unless-stopped ${dockerRegistry}/${dockerRepo}:${gitCommit}
