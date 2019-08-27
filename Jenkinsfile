@@ -72,9 +72,13 @@ pipeline {
                 lock(resource: env.JOB_NAME + "-deploy", inversePrecedence: true) {
                     script {
                         try {
+                      
                             sh """
-                            if [ ! `$(sudo docker ps -q -f name=${dockerRepo})` ]; then
+                            sudo docker ps -q -f name=${dockerRepo}
+                            if [ $? -eq 1 ]; then
                                 sudo docker stop ${dockerRepo} 
+                            elif 
+                               echo "No Container Found"
                             fi
                             """
                         } catch (ex) {
