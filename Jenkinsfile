@@ -38,19 +38,9 @@ pipeline {
         stage('Analysis') {
             steps {
                 lock(resource: env.JOB_NAME + "-Analysis", inversePrecedence: true) {
-                parallel(
-                    "Sonar": {
-                        echo 'Starting Sonar Analysis'
-                        sh 'mvn cobertura:cobertura -Dcobertura.report.format=xml -f pom.xml'
-                        sh 'mvn sonar:sonar -Phwsonar -f pom.xml'
-                    },
-                     "Security Scan": {
-                        echo 'Starting Security Scan '
-                        sh (script: """
-                            echo "Running Security Scan
-                         """ )
-                    }
-                )
+                    echo 'Starting Sonar Analysis'
+                    sh 'mvn cobertura:cobertura -Dcobertura.report.format=xml -f pom.xml'
+                    sh 'mvn sonar:sonar -f pom.xml'
                 }
             }
         }
