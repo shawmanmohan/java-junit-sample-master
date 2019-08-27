@@ -1,7 +1,7 @@
 pipeline {
 
     agent {
-      label 'jslave50.aws.hotwire.com'
+      label 'master'
     }
 
     environment {
@@ -26,7 +26,7 @@ pipeline {
                     script {
                         gitCommit = sh(script: 'git rev-parse --short HEAD', returnStdout: true).trim()
                         try {
-                        sh "sudo docker build --rm -t ${dockerRepo}:${gitCommit} ."
+                        sh "sudo docker build --rm -t ${dockerRepo} ."
                         } catch (ex) {
                            error "Error when building docker image"
                         }
@@ -40,7 +40,7 @@ pipeline {
                 lock(resource: env.JOB_NAME + "-Analysis", inversePrecedence: true) {
                     echo 'Starting Sonar Analysis'
                     sh 'mvn cobertura:cobertura -Dcobertura.report.format=xml -f pom.xml'
-                    sh 'mvn sonar:sonar -f pom.xml'
+                    sh 'mvn sonar:sonar -Phwsonar -f pom.xml'
                 }
             }
         }
@@ -50,9 +50,7 @@ pipeline {
                 lock(resource: env.JOB_NAME + "-docker-publish", inversePrecedence: true) {
                     script {
                         try {
-                            echo "Pushing docker image to AWS ECR"
-                            dlogin = sh(script: 'aws ecr get-login --no-include-email --region us-west-1', returnStdout: true)
-                            sh "sudo ${dlogin}"
+                            echo "Pushing docker image to Registry"
                             sh "sudo docker tag -f ${dockerRepo}:${gitCommit} ${dockerRegistry}/${dockerRepo}:${gitCommit} || true"
                             sh "sudo docker push ${dockerRegistry}/${dockerRepo}:${gitCommit}"
                             echo "Cleaning up docker images after successful push"
@@ -62,40 +60,63 @@ pipeline {
                             echo 'Cleaning up docker images after failure'
                             sh "sudo docker rmi -f ${dockerRegistry}/${appName}:${gitCommit} || true"
                             sh "sudo docker rmi -f ${dockerRepo}:${gitCommit} || true"
-                            error "Error pushing docker image to repository"
+                            error("Error pushing docker image to repository")
                         }
                     }
                 }
-            milestone(1)
+            }
+        }
+
+        stage('Clean-Previous-Deploy') {
+            steps {
+                lock(resource: env.JOB_NAME + "-deploy", inversePrecedence: true) {
+                    script {
+                        try {
+                            sh """
+                            if [ ! "$(sudo docker ps -q -f name=${dockerRepo})" ]; then
+                                sudo docker stop ${dockerRepo} 
+                            fi
+                            """
+                        } catch (ex) {
+                            echo "Unable to Stop Old Running Docker Container"
+                        }
+            }
+            }
             }
         }
 
         stage('Deploy') {
             steps {
-                lock(resource: env.JOB_NAME + "-acceptance-deploy", inversePrecedence: true) {
+                lock(resource: env.JOB_NAME + "-deploy", inversePrecedence: true) {
                     script {
                         try {
-                        /* Cloudformation template parameters */
                             sh """
-                                docker run -it -d -p 8080:8080 --restart=unless-stopped ${dockerRegistry}/${dockerRepo}:${gitCommit}
+                                if [ "$(sudo docker ps -aq -f status=exited -f name=${dockerRepo})" ]; then
+                                    sudo docker rm ${dockerRepo}
+                                fi
+                                sudo docker run -it -d -p 8080:8080 --name=${dockerRepo} --restart=unless-stopped ${dockerRegistry}/${dockerRepo}:${gitCommit}
                             """
                         } catch (ex) {
-                            echo "Unable to Start Docker Container"
+                            echo "Unable to Start Docker Container, Restrating Old Container"
+                            sh """ sudo docker start ${dockerRepo} """
+                            error("Unable to Start Docker Container")
                         }
-            }
-            }
-            milestone(10)
+                    }
+                }
             }
         }
 
         stage('Deploy-Sanity') {
-        steps {
-                    echo 'Starting Smoke Test'
-                    sh "mvn clean verify" 
+            steps {
+                lock(resource: env.JOB_NAME + "-smoke-test", inversePrecedence: true) {
+                echo 'Starting Smoke Test'
+                sh "mvn clean verify"
+            }
             }
         }
+        
     }
-}
+    
     post {
       /* Steps to run after the pipeline is complete */
       success {
@@ -115,5 +136,4 @@ pipeline {
           )
       }
     }
-    }
-
+}
