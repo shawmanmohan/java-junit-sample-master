@@ -40,7 +40,7 @@ pipeline {
                 lock(resource: env.JOB_NAME + "-Analysis", inversePrecedence: true) {
                     echo 'Starting Sonar Analysis'
                     sh 'mvn cobertura:cobertura -Dcobertura.report.format=xml -f pom.xml'
-                    sh 'mvn sonar:sonar -Phwsonar -f pom.xml'
+                    sh 'mvn sonar:sonar -Psonar -f pom.xml'
                 }
             }
         }
@@ -115,7 +115,6 @@ pipeline {
           emailext(
               to: 'stutirastogi92@gmail.com',
               subject: "SUCCESS: Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]'",
-              attachmentsPattern: 'reports/fortify_results.pdf',
           body: '<p>Check console output at <a href=${BLUE_OCEAN_URL}>${JOB_NAME} [${BUILD_NUMBER}]</a></p>'
         )
         }
@@ -123,7 +122,6 @@ pipeline {
           emailext(
               to: 'stutirastogi92@gmail.com',
               subject: "FAILED: Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]'",
-          attachmentsPattern: 'reports/fortify_results.pdf',
               body: '<p>Check console output at <a href=${BLUE_OCEAN_URL}>${JOB_NAME} [${BUILD_NUMBER}]</a></p>'
           )
       }
